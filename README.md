@@ -3,7 +3,7 @@
 ## Preface
 Applogize for a "just-to-read" repo😭 This is maily because we lack a stable GPU supplyment last year (5/12 months available). We have presented our work to five groups, academia and industry. The opinion of audience formed an overwhelming majority, that is, they want to see our code regardless it can one-button-run or not.
 
-Fortunately, after OSDI'25 & ATC'25, our situation changes a lot, some vendors appreciate our work, and offer us resouces for refinement. We will fulfil ourselves to transform this "just-to-read" repo into a "easy-to-run" one **in one month**, for the sake of a dedicated system researcher/programmer.
+Fortunately, after OSDI'25 & ATC'25, our situation changes a lot, some vendors appreciate our work, and offer us resouces for refinement. We will fulfil ourselves to transform this "just-to-read" repo into a "easy-to-run" one **in one month**, for the sake of being a dedicated system researcher/programmer.
 
 Please check our plan and process in the pinned issue😘
 
@@ -20,7 +20,7 @@ We will provide docs in a story-telling way, once read, you can understand our f
 Docs can be found on `https://blitz-serving.github.io/blitzscale-doc/`, but we are still working on it.
 
 ## Acknowledgements  
-This project leverage awosome kernel libeary **FlashInfer**
+This project leverage awosome kernel libeary **FlashInfer**!
 <https://github.com/flashinfer-ai/flashinfer>
 
 This project incorporates code from **Text Generation Inference (TGI)**  
@@ -31,7 +31,8 @@ The full license text of apache-2.0 in TGI is provided in `LICENSES/Apache-2.0.t
 
 The specification of modification to TGI file can be found in `NOTICE` and each source file.
 
-This project is also inpired by **SwiftTransformer**
+This project is also inpired by **SwiftTransformer**,
 <https://github.com/LLMServe/SwiftTransformer>
+e.g., we learned that cuBLAS uses a columm-major storage format from their code.
 
 
