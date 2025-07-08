@@ -1,0 +1,16 @@
+[package]
+name = "pb"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+prost = "^0.12"
+thiserror = "^1.0"
+tonic = "^0.10"
+tower = "^0.4"
+
+[build-dependencies]
+tonic-build = "0.10.1"
+prost-build = "0.12.1"

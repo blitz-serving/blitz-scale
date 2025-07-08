@@ -1,0 +1,5 @@
+add_library(nccl_utils STATIC nccl_utils.cc)
+set_property(TARGET nccl_utils PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET nccl_utils PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS  ON)
+target_link_libraries(nccl_utils PUBLIC ${MPI_CXX_LIBRARIES} ${NCCL_LIBRARIES})
+target_include_directories(nccl_utils PUBLIC ${MPI_CXX_INCLUDE_DIRS} ${NCCL_INCLUDE_DIRS})

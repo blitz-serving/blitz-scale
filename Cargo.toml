@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = ["tokenizer", "router_v2", "request-sim", "rust-grpc", "rust-proto"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+debug = 1
+incremental = true
+lto = "off"
+panic = "abort"

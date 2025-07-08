@@ -1,0 +1,6 @@
+language = "c++"
+namespace = "tokenizer"
+include_guard = "TOKENIZER_H"
+sys_includes = ["cstdint", "cstddef"]
+no_includes = true
+usize_is_size_t = true

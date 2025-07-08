@@ -1,0 +1,25 @@
+===================================================================
+Portions of this software are derived from:
+
+  Text Generation Inference (TGI)
+  https://github.com/huggingface/text-generation-inference/tree/main/router
+  Copyright © 2022-present Hugging Face Inc.
+  Licensed under the Apache License, Version 2.0.
+===================================================================
+
+The HTTP server logic in the router module of Blitzscale is based on [Text-Generation-Inference].
+Modifications made by <Blitz-serving> are:
+- Added new interfaces to support manual scale-up and scale-down operations
+- Enlarge schedule from single instance to distributed multi-instance scenario, and completely replaced the scheduling module with Blitzscale-specific strategies, including PD disaggregation and Zigzag scheduling
+- Completely replace the serving backend (GPU-attach process), and implement in C++. 
+- Introduced a monitor-trigger automatic scaling mechanism
+
+Following file are modified from `TGI`
+- router_v2
+    - infer.rs
+    - lib.rs
+    - main.rs
+    - server.rs
+    - stub.rs
+
+These modifications are Copyright © 2025 <Blitz-serving>

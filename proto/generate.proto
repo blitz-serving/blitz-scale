@@ -1,0 +1,462 @@
+syntax = "proto2";
+
+package generate.v2;
+
+service TextGenerationService {
+    // Model Info
+    rpc Info(InfoRequest) returns (InfoResponse) {}
+    // Service discovery
+    rpc ServiceDiscovery(ServiceDiscoveryRequest) returns (ServiceDiscoveryResponse) {}
+    // Empties batch cache
+    rpc ClearCache(ClearCacheRequest) returns (ClearCacheResponse);
+    // Remove requests from a cached batch
+    rpc FilterBatch(FilterBatchRequest) returns (FilterBatchResponse);
+    // Warmup the model and compute max cache size
+    rpc Warmup(WarmupRequest) returns (WarmupResponse);
+    // Prefill batch and decode first token
+    rpc Prefill(PrefillRequest) returns (PrefillResponse);
+    // Decode token for a list of prefilled batches
+    rpc Decode(DecodeRequest) returns (DecodeResponse);
+    // Health check
+    rpc Health(HealthRequest) returns (HealthResponse);
+    // Send parameters to dst rank
+    rpc SendParams(SendParamsRequest) returns (SendParamsResponse);
+    // Receive parameters from src rank
+    rpc RecvParams(RecvParamsRequest) returns (RecvParamsResponse);
+    // Load params from host memory to device memory
+    rpc LoadParams(LoadParamsRequest) returns (LoadParamsResponse);
+    // Prefill batch for some layers and respond number of forwarded layers and
+    // call NCCL send/recv
+    rpc PrefillV2(PrefillV2Request) returns (PrefillV2Response);
+    // Decode token for a list of prefilled batches
+    // RPC caller's responsible to garantee List[CachedBatches] are concatenable
+    rpc DecodeV2(DecodeV2Request) returns (DecodeV2Response);
+    // Prefill batch through zigzag_scheduler
+    rpc ZagPrefill(ZagPrefillRequest) returns (PrefillV2Response);
+    // RPC for send migration
+    rpc Migrate(MigrateRequest) returns (MigrateResponse);
+    // RPC for recv migration
+    rpc Immigrate(ImmigrateRequest) returns (ImmigrateResponse);
+    // RPC for send migration
+    rpc MigratePartial(MigratePartialRequest) returns (MigrateResponse);
+    // RPC for recv migration
+    rpc ImmigratePartial(ImmigratePartialRequest) returns (ImmigrateResponse);
+    // Send parameters, invoke NCCL primitives
+    rpc WaitRdmaDone(WaitRdmaDoneRequest) returns (WaitRdmaDoneResponse);
+    // Clear TFM_LAYER_CNT when replica turns into INACTIVE
+    rpc ResetStatus(ResetStatusRequest) returns (ResetStatusResponse);
+    // Set status to READY. Used to mock the status of the model
+    rpc SetStatusReady(SetStatusReadyRequest) returns (SetStatusReadyResponse);
+    // Relay request
+    rpc Relay(RelayRequest) returns (RelayResponse);
+    // Broadcast params through NVLink
+    rpc NvlBroadcast(BroadcastRequest) returns (BroadcastResponse);
+    // Broadcast params through RDMA
+    rpc RdmaBroadcast(BroadcastRequest) returns (BroadcastResponse);
+    // Broadcast params in a Waltz Tanz fashion
+    rpc TanzBroadcast(BroadcastRequest) returns (BroadcastResponse);
+}
+
+message HealthRequest {}
+message HealthResponse {
+    required string state = 1;
+}
+
+message RelayRequest {
+    required int32 rank = 1;
+    required bool relax_not_head = 2;
+}
+message RelayResponse {
+    optional uint64 batch_id = 1;
+    optional uint32 seq_num = 2;
+}
+
+message BroadcastRequest {
+    repeated int32 src_ranks = 1;
+    repeated int32 dst_ranks = 2;
+}
+message BroadcastResponse{}
+
+message ResetStatusRequest{}
+message ResetStatusResponse{}
+
+message SetStatusReadyRequest{}
+message SetStatusReadyResponse{}
+
+// Empty request
+message InfoRequest {}
+
+message InfoResponse {
+    required bool requires_padding = 1;
+    required string dtype = 2;
+    required string device_type = 3;
+    optional uint32 window_size = 4;
+    required uint32 speculate = 5;
+}
+
+// Empty request
+message ServiceDiscoveryRequest {}
+
+message ServiceDiscoveryResponse {
+    // Other shards urls
+    repeated string urls = 1;
+    // Ranks view
+    required string ranks_view_in_json = 2;
+}
+
+message ClearCacheRequest {
+    // Optional batch id
+    optional uint64 id = 1;
+}
+
+// Empty response
+message ClearCacheResponse {}
+
+message NextTokenChooserParameters {
+    // exponential scaling output probability distribution
+    required float temperature = 1;
+    // restricting to the k highest probability elements
+    required uint32 top_k = 2;
+    // restricting to top tokens summing to prob_cut_off <= prob_cut_off
+    required float top_p = 3;
+    // restricting to top tokens summing to prob_cut_off <= prob_cut_off
+    required float typical_p = 4;
+    // apply sampling on the logits
+    required bool do_sample = 5;
+    // random seed for sampling
+    required uint64 seed = 6;
+    // repetition penalty
+    required float repetition_penalty = 7;
+    // token watermarking using "A Watermark for Large Language Models"
+    required bool watermark = 8;
+}
+
+message StoppingCriteriaParameters {
+    // Maximum number of generated tokens
+    required uint32 max_new_tokens = 1;
+    // Optional stopping sequences
+    repeated string stop_sequences = 2;
+    // Ignore end of sequence token
+    // used for benchmarking
+    required bool ignore_eos_token = 3;
+}
+
+message Request {
+    // Request ID
+    required uint64 id = 1;
+    // The generation context
+    required string inputs = 2;
+    // Context truncation
+    optional uint32 truncate = 3;
+    // Next Token Chooser Parameters
+    optional NextTokenChooserParameters parameters = 4;
+    // Stopping Criteria Parameters
+    required StoppingCriteriaParameters stopping_parameters = 5;
+    // Return prefill logprobs
+    required bool prefill_logprobs = 6;
+    // Return most likely n tokens
+    required uint32 top_n_tokens = 7;
+    // Input token list
+    repeated uint32 input_tokens = 8;
+}
+
+message Batch {
+    // Batch ID
+    required uint64 id = 1;
+    // Individual requests
+    repeated Request requests = 2;
+    // Batch size (==len(requests))
+    required uint32 size = 3;
+    // Maximum number of tokens this batch will grow to
+    required uint32 max_tokens = 4;
+}
+
+message CachedBatch {
+    // Batch ID
+    required uint64 id = 1;
+    // Individual requests ids
+    repeated uint64 request_ids = 2;
+    // Batch size (==len(requests))
+    required uint32 size = 3;
+    // Maximum number of tokens this batch will grow to
+    required uint32 max_tokens = 4;
+}
+
+enum FinishReason {
+    FINISH_REASON_LENGTH = 0;
+    FINISH_REASON_EOS_TOKEN = 1;
+    FINISH_REASON_STOP_SEQUENCE = 2;
+}
+
+message GeneratedText {
+    // Output
+    required string text = 1;
+    // Number of generated tokens
+    required uint32 generated_tokens = 2;
+    // Finish reason
+    required FinishReason finish_reason = 3;
+    // Seed
+    optional uint64 seed = 4;
+}
+
+message Tokens {
+    // Token IDs
+    repeated uint32 ids = 1;
+    // Logprobs
+    repeated float logprobs = 2;
+    // tokens
+    repeated string texts = 3;
+    // special
+    repeated bool is_special = 4;
+}
+
+message Generation {
+    // Request ID
+    required uint64 request_id = 1;
+    // Prefill tokens (optional)
+    optional Tokens prefill_tokens = 2;
+    required Tokens tokens = 3;
+    // Complete generated text (optional)
+    optional GeneratedText generated_text = 4;
+    // Top tokens (optional)
+    repeated Tokens top_tokens = 5;
+}
+
+message FilterBatchRequest {
+    // Batch ID
+    required uint64 batch_id = 1;
+    // Requests to keep
+    repeated uint64 request_ids = 2;
+}
+
+message FilterBatchResponse {
+    // Filtered Batch (cached)
+    required CachedBatch batch = 1;
+}
+
+message PrefillRequest {
+    // Batch
+    required Batch batch = 1;
+}
+
+message PrefillResponse {
+    // Generation
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Forward elapsed time in nanoseconds
+    required uint64 forward_ns = 3;
+    // Decode elapsed time in nanoseconds
+    required uint64 decode_ns = 4;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 5;
+}
+
+message DecodeRequest {
+    // Cached batches
+    repeated CachedBatch batches = 1;
+}
+
+message DecodeResponse {
+    // Decodes
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Forward elapsed time in nanoseconds
+    required uint64 forward_ns = 3;
+    // Decode elapsed time in nanoseconds
+    required uint64 decode_ns = 4;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 5;
+    // Concatenate elapsed time in nanoseconds
+    optional uint64 concat_ns = 6;
+}
+
+message WarmupRequest {
+    // Batch to warmup on
+    optional Batch batch = 1;
+    optional uint32 max_input_length = 2;
+    optional uint32 max_prefill_tokens = 3;
+    optional uint32 max_total_tokens = 4;
+}
+
+// Empty response
+message WarmupResponse {
+    // Maximum number of tokens supported by the model
+    optional uint32 max_supported_total_tokens = 1;
+}
+
+message SendParamsRequest {
+    required int32 dst = 1;
+}
+
+message SendParamsResponse {}
+
+message RecvParamsRequest {
+    required int32 src = 1;
+}
+
+message RecvParamsResponse {}
+
+enum LoadParamCase {
+    // from host memory
+    LOAD_FROM_HOST_MEM = 0;
+    // from disk
+    LOAD_FROM_DISK = 1;
+}
+message LoadParamsRequest {
+    required LoadParamCase load_case = 1; 
+    required string model_name = 2;
+    optional string model_path = 3;
+}
+
+message LoadParamsResponse {}
+
+enum PrefillCase {
+    // Do not migrate kv cache | 0b'0
+    PREFILL_CASE_NORMAL = 0;
+    // Migrate KV cache after Prefill is finished | 0b'1
+    PREFILL_CASE_MIGRATE = 1;
+    // KV cache migration layer by layer | 0b'(1<<1)
+    PREFILL_CASE_MIGRATE_PROGRESSIVE = 2;
+    // Naive pipeline parallelism policy | 0b'(1<<2)
+    PREFILL_CASE_NAIVE_PP = 4;
+    // KV cache immigrate | 0b'(1<<4)
+    PREFILL_CASE_IMMIGRATE = 8;
+}
+
+message PipeParaInfo {
+    oneof start_layer {
+        // Start from the beginning. Used as boolean
+        uint32 embedding_layer = 1;
+        // Start from the final projection layer. Used as boolean
+        uint32 lm_head = 2;
+        // Start from a specific transformer layer (in the middle). Used as integer.
+        uint32 tfm_layer = 3;
+    }
+    // A vector that indicates the number of layers to forward for each rank.
+    repeated uint32 num_layer_per_rank = 4;
+}
+
+message PrefillV2Request {
+    // Batch
+    required Batch batch = 1;
+    //
+    required uint32 forward_case = 2;
+    //
+    optional PipeParaInfo pp_info = 3;
+    //
+    repeated int32 pipe_peer = 4;
+}
+
+message PrefillV2Response {
+    // Generation
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Updated PP info
+    optional PipeParaInfo pp_info = 3;
+    // Forward elapsed time in nanoseconds
+    // Unset
+    required uint64 forward_ns = 4;
+    // Decode elapsed time in nanoseconds
+    // Unset
+    required uint64 decode_ns = 5;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 6;
+}
+
+message ZagPrefillRequest {
+    // Batch
+    required Batch batch = 1;
+    //
+    required uint32 forward_case = 2;
+    //
+    optional PipeParaInfo pp_info = 3;
+    // Total forward layers conducted by scheduler
+    required uint32 zag_layers = 4;
+    // Sequential number
+    required uint32 zag_seq_num = 5;
+}
+
+message DecodeV2Request {
+    // Cached batches
+    repeated CachedBatch batches = 1;
+    // Last iteration output tokens
+    repeated Tokens last_iter_tokens = 2;
+}
+
+message DecodeV2Response {
+    // Decodes
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 3;
+}
+
+message MigrateRequest {
+    // Migrate batch
+    required Batch batch = 1;
+    // Src ranks, probably in TP
+    repeated int32 src = 2;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 3;
+}
+
+enum PartialCase {
+    // first half of transformer layers
+    PARTIAL_CASE_FIRST = 1;
+    // second half of transformer layers
+    PARTIAL_CASE_SECOND = 2;
+}
+
+message MigratePartialRequest {
+    // Immigrate batch
+    required Batch batch = 1;
+    // Partial cases
+    required PartialCase fst_or_snd = 2;
+    // Dividing layer
+    required uint32 num_layer = 3;
+    // Src ranks, probably in TP
+    repeated int32 src = 4;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 5;
+}
+
+message MigrateResponse {
+    // Next batch (cached) at Decode instance
+    // return this batch makes it easier to call ClearCache
+    required CachedBatch batch = 1;
+}
+
+message ImmigrateRequest {
+    // Immigrate batch
+    required Batch batch = 1;
+    // Src ranks, probably in TP
+    repeated int32 src = 2;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 3;
+}
+
+message ImmigratePartialRequest {
+    // Immigrate batch
+    required Batch batch = 1;
+    // Partial cases
+    required PartialCase fst_or_snd = 2;
+    // Dividing layer
+    required uint32 num_layer = 3;
+    // Src ranks, probably in TP
+    repeated int32 src = 4;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 5;
+}
+
+message ImmigrateResponse {
+    // Next batch (cached) at Decode instance
+    required CachedBatch batch = 1;
+}
+
+message WaitRdmaDoneRequest {}
+
+message WaitRdmaDoneResponse {}

@@ -1,0 +1,118 @@
+[package]
+name = "router_v2"
+version.workspace = true
+edition.workspace = true
+
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "router_v2"
+path = "src/main.rs"
+
+[dependencies]
+async-stream = "0.3.5"
+axum = { version = "0.6.20", features = ["json"] }
+axum-tracing-opentelemetry = "0.14.1"
+clap = { version = "4.4.5", features = ["derive", "env"] }
+futures = "0.3.28"
+metrics = "0.21.1"
+metrics-exporter-prometheus = { version = "0.12.1", features = [] }
+nohash-hasher = "0.2.0"
+opentelemetry = { version = "0.20.0", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.13.0"
+reqwest = { version = "0.11.20", features = [] }
+serde = "1.0.188"
+serde_json = "1.0.107"
+thiserror = "1.0.48"
+tokenizers = { version = "0.14.0", features = ["http"] }
+tokio = { version = "1.32.0", features = [
+    "rt",
+    "rt-multi-thread",
+    "parking_lot",
+    "signal",
+    "sync",
+    "fs",
+] }
+pb = { path = "../rust-proto" }
+grpc-metadata = { path = "../rust-grpc" }
+prost = "^0.12"
+tonic = "^0.10"
+tower = "^0.4"
+tracing = "^0.1"
+http = "*"
+rand = "0.8.5"
+tokio-stream = "0.1.14"
+tower-http = { version = "0.4.4", features = ["cors"] }
+tracing-opentelemetry = "0.21.0"
+tracing-subscriber = { version = "0.3.17", features = ["json", "env-filter"] }
+utoipa = { version = "3.5.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "3.1.5", features = ["axum"] }
+ngrok = { version = "0.13.1", features = ["axum"], optional = true }
+hf-hub = "0.3.1"
+init-tracing-opentelemetry = { version = "0.14.1", features = [
+    "opentelemetry-otlp",
+] }
+toml = "0.8.12"
+tracing-appender = "0.2.3"
+async-channel = "2.3.1"
+
+[build-dependencies]
+vergen = { version = "8.2.5", features = ["build", "git", "gitcl"] }
+
+[features]
+default = ["ngrok", "impl_blitz"]
+ngrok = ["dep:ngrok"]
+statistic = []
+manually_scale = []
+impl_blitz = ["impl_rdma", "mutate"]
+impl_sllm = []
+
+# feat and dependency
+eval_sllm = ["cache_replace"]
+eval_sllm_pro = ["cache_all_hit", "mutate"]
+eval_net = ["impl_blitz", "unidirect", "impl_nvl"]
+eval_fast = ["impl_blitz", "impl_fast_pro"]
+eval_all = ["impl_blitz", "impl_fast_pro", "impl_live_pro"]
+eval_fast_wo_nvl = ["impl_blitz", "impl_fast"]
+eval_fast_live_wo_nvl = ["impl_blitz", "impl_fast", "impl_live"]
+test_live = ["live"]
+test_nvl = ["impl_nvl"]
+test_tanz = ["impl_blitz", "impl_tanz"]
+
+# -------- Policy --------
+mutate = []
+
+# ------ Mechanisms ------
+# live := Zigzag scaling
+live = ["impl_blitz"]
+impl_live = ["live"]
+impl_live_pro = ["live", "impl_tanz"]
+# fast := Multicasting
+fast = []
+# unidirect := link unidirect for congestion
+unidirect = ["impl_rdma"]
+impl_nvl = []
+impl_rdma = []
+impl_fast = ["fast", "impl_rdma"]
+impl_tanz = ["fast", "impl_rdma", "impl_nvl"]
+impl_fast_pro = ["fast", "impl_tanz"]
+
+# ---- Serverless-LLM ----
+cache_all_miss = ["impl_sllm"]
+cache_all_hit = ["impl_sllm"]
+cache_replace = ["impl_sllm"]
+
+#------- Motivation ------
+motiv = ["impl_sllm", "mock_transfer"]
+
+# Sleep for a while to simulate params transfering in sched_naive
+mock_transfer = []
+
+# For serverless llm to scale from prefill ndoe
+optimize_network_interference = []
+# For serverless llm to simulate operator loading. It takes 100 ms
+optimize_op_loading = []
+
+decode_load_balance = []

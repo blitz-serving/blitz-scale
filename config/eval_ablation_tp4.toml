@@ -1,0 +1,101 @@
+# If you want to generate configurations and run test cases, under workspace root directory:
+# 
+# ```bash
+# python scripts/batchv2/main.py -t config/test_distserve.toml
+# ```
+#
+# This will create a directory to store logs and uncommitted files.
+# 
+#
+# To continue interrupted jobs, 
+# ```bash
+# python scripts/batchv2/main.py -c log_home/20250428-2036
+# ```
+# 
+# This will read checkpoint files and skip finished jobs.
+
+[global]
+num_gpus_per_node = 8
+cuda_devices = [0, 1, 2, 3, 4, 5, 6, 7]
+
+# Only three fields available in [selection]:
+# - models
+# - features
+# - datasets
+[selection]
+models = ["qwen_72b"]
+features = ["e2e_net", "e2e_blitz"]
+# features = ["e2e_net", "e2e_fast", "e2e_sllm", "e2e_all_cache", "e2e_blitz"]
+datasets = ["BurstGPT-5min"]
+
+[server]
+ibv_rate = 100
+inter_node = true
+
+[server.config]
+g0001 = "10.254.0.2"
+g0002 = "10.254.0.3"
+g0003 = "10.254.0.4"
+g0004 = "10.254.0.5"
+
+# Fields in [router] field could be a value, a list of values, or a list of kv-pairs
+# - Value: copied directly to generated instance.toml (Like port = 11236)
+# - A list of values: unzip the list and generate n * m instance.toml files if there are two lists containing n and m values.
+# - A list of kv-pairs: unzip the list, and use each kv-pair to update [router]'s specific field. (See [[router.tuples]] for more information)
+[router]
+port = 11236
+prefill_lower_bound = 0.5
+prefill_upper_bound = 0.7
+decode_lower_bound = 0.75
+decode_upper_bound = 0.95
+migration_lower_bound = 0.4
+migration_upper_bound = 0.8
+# TODO
+scale_down_threshold_millis = 1500
+
+max_prefill_num = 7
+min_prefill_num = 1
+max_decode_num = 7
+min_decode_num = 1
+
+mock_load_millis = 0
+mock_transfer_millis = 0
+
+# Extra envs when launching server, router and client.
+# CUDA_VISIBLE_DEVICES is set in [global] section and will be ignored if set here.
+[extra-envs]
+LOG_LEVEL = "INFO"
+
+[features]
+sllm_cache_replace = "ngrok,impl_sllm,cache_replace"
+sllm_optimal = "ngrok,impl_sllm,cache_all_hit,mutate"
+blitz_ultra = "ngrok,impl_blitz,impl_live_pro,impl_fast_pro,mutate"
+blitz_tanz_debug = "ngrok,impl_blitz,impl_fast_pro"
+blitz_live_tanz_debug = "ngrok,impl_blitz,impl_live_pro,impl_fast_pro"
+
+# e2e evaluation
+e2e_sllm = "ngrok,impl_sllm,cache_replace"                 # sllm_cache_replace
+e2e_all_cache = "ngrok,impl_sllm,cache_all_hit,mutate"     # sllm_optimal
+e2e_blitz = "ngrok,impl_blitz,impl_live_pro,impl_fast_pro" # blitz_ultra
+e2e_ds = "ngrok,impl_sllm,cache_replace"                   # fake
+e2e_net = "ngrok,eval_net"
+e2e_fast = "ngrok,eval_fast"
+
+[datasets]
+
+[datasets.BurstGPT-5min]
+dataset_path = "./dataset_home/BurstGPT-5min.csv"
+time_in_secs = 300
+scale_factor = 1.0
+
+[models]
+
+[models.qwen_72b]
+model_path = "/blitz_home/models/Qwen-2.5-72B-Instruct"
+tokenizer = "/blitz_home/models/Qwen-2.5-72B-Instruct/tokenizer.json"
+tokens_prefilled_per_sec = 5300
+tokens_transferred_per_sec = 160000
+num_hidden_layers = 80
+num_available_blocks = 4000
+tp_size = 4
+parameter_size = 576.0

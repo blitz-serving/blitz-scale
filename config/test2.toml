@@ -1,0 +1,100 @@
+[global]
+num_gpus_per_node = 4
+cuda_devices = [0, 1, 2, 3, 4, 5, 6, 7]
+
+[selection]
+models = ["llama2_7b"]
+features = ["blitz_live_tanz", "sllm_optimal"]
+datasets = ["AzureCode2023-90sec", "AzureCode2023-130sec"]
+
+[server]
+ibv_rate = 100
+inter_node = false
+
+[server.config]
+g0001 = "10.254.0.10"
+g0002 = "10.254.0.9"
+
+[router]
+port = 11236
+max_prefill_num = 13
+max_decode_num = 13
+min_prefill_num = 1
+min_decode_num = 1
+
+prefill_lower_bound = [0.5, 0.6, 0.7]
+prefill_upper_bound = 0.8
+decode_lower_bound = 0.75
+decode_upper_bound = 0.95
+migration_lower_bound = 0.2
+migration_upper_bound = 0.4
+scale_down_threshold_millis = [333, 666, 999]
+
+mock_load_millis = 0
+mock_transfer_millis = 0
+
+# Extra envs when launching server, router and client.
+# CUDA_VISIBLE_DEVICES is set in [global] section and will be ignored if set here.
+[extra-envs]
+LOG_LEVEL = "INFO"
+
+[features]
+sllm_cache_replace_mutate = "ngrok,impl_sllm,cache_replace,mutate"
+sllm_cache_replace = "ngrok,impl_sllm,cache_replace"
+blitz_tanz = "ngrok,impl_blitz,impl_fast_pro"
+sllm_optimal = "ngrok,impl_sllm,cache_all_hit,mutate"
+blitz_live_tanz = "ngrok,impl_blitz,impl_live_pro,impl_fast_pro"
+
+[datasets]
+
+[datasets.AzureCode2023-90sec]
+dataset_path = "./dataset_home/AzureCode2023-90sec.csv"
+time_in_secs = 90
+scale_factor = 1.3
+
+[datasets.AzureCode2023-130sec]
+dataset_path = "./dataset_home/AzureCode2023-130sec.csv"
+time_in_secs = 130
+scale_factor = 1.3
+
+[models]
+
+[models.llama2_7b]
+model_path = "/nvme/blitz/model/Llama-2-7b-hf"
+tokenizer = "/nvme/blitz/model/Llama-2-7b-hf/tokenizer.json"
+tokens_prefilled_per_sec = 13000
+tokens_transferred_per_sec = 30000
+num_hidden_layers = 32
+num_available_blocks = 8000
+tp_size = 2
+parameter_size = 14.0
+
+[models.llama3_8b]
+model_path = "/nvme/huggingface/model/DeepSeek-R1-Distill-Llama-8B"
+tokenizer = "/nvme/huggingface/model/DeepSeek-R1-Distill-Llama-8B/tokenizer.json"
+tokens_prefilled_per_sec = 12000
+tokens_transferred_per_sec = 60000
+num_hidden_layers = 32
+num_available_blocks = 30000
+tp_size = 1
+parameter_size = 16.0
+
+[models.mistral_24b]
+model_path = "/nvme/huggingface/models/Mistral-Small-24B-Instruct-2501"
+tokenizer = "/nvme/huggingface/models/Mistral-Small-24B-Instruct-2501/tokenizer.json"
+tokens_prefilled_per_sec = 6000
+tokens_transferred_per_sec = 40000
+num_hidden_layers = 40
+num_available_blocks = 8000
+tp_size = 2
+parameter_size = 48.0
+
+[models.qwen_72b]
+model_path = "/nvme/huggingface/models/models--Qwen--Qwen2.5-72B-Instruct/snapshots/495f39366efef23836d0cfae4fbe635880d2be31"
+tokenizer = "/nvme/huggingface/models/models--Qwen--Qwen2.5-72B-Instruct/snapshots/495f39366efef23836d0cfae4fbe635880d2be31/tokenizer.json"
+tokens_prefilled_per_sec = 7500
+tokens_transferred_per_sec = 40000
+num_hidden_layers = 80
+num_available_blocks = 8000
+tp_size = 8
+parameter_size = 576.0

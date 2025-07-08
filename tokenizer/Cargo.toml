@@ -1,0 +1,18 @@
+[package]
+name = "tokenizer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokenizers = { version = "0.14.0", features = ["http"] }
+
+
+[lib]
+name = "tokenizer"
+# static
+crate-type = ["staticlib"]
+
+[build-dependencies]
+cbindgen = "0.26.0"

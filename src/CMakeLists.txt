@@ -1,0 +1,7 @@
+add_subdirectory(kernel)
+add_subdirectory(layer)
+add_subdirectory(model)
+add_subdirectory(blitz)
+add_subdirectory(service)
+add_subdirectory(util)
+add_subdirectory(server)
