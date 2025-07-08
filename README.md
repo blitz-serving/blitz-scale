@@ -1,18 +1,18 @@
 # BlitzScale
 
 ## Preface
-Applogize for a "just-to-read" repo😭 This is maily because we lack a stable GPU supplyment last year (5/12 months totally available at school; some other times partially available, thx to Alibaba Tongyi). We have presented our work to five groups, academia and industry. The opinion of audience formed an overwhelming majority, that is, they want to see our code regardless it can one-button-run or not.
-
-Fortunately, after OSDI'25 & ATC'25, our situation changes a lot, some vendors (thx to Alibaba Tongyi, Huawei Cloud, etc.) appreciate our work, and offer us resouces for refinement. We will fulfil ourselves to transform this "just-to-read" repo into a "easy-to-run" one **in one month**, for the sake of being a dedicated system researcher/programmer.
+Apologize for a "just-to-read" repo currently 😭. This is mainly because we lacked a stable GPU supply last year (only 5/12 months available at school),
+with special thanks to Alibaba Tongyi Lab and Huawei Cloud for supporting our project.
+Thus, we are still pushing on to transform this "just-to-read" repo into an "easy-to-run" one **in one month**. Stay tuned!
 
 ## Roadmap 
 
 Please check our plan and process in the [pinned issue](https://github.com/blitz-serving/blitz-scale/issues/1)😘
 
 ## Compile flags for C++ (TBD)
-We will provide 2 building methods sooner:
+We will provide 2 building methods soon:
 - A docker image with pre-compiled BlitzScale project
-- A one-button-config script, which hiddens CMake details of FlashInfer, targeting Nvidia DGX systems now.
+- A one-button-config script, which hides CMake details of FlashInfer, targeting Nvidia DGX systems now.
 
 ## Compile flags for Rust
 Please read `router_v2/Cargo.toml`, our system is `impl_blitz,impl_fast_pro,impl_live_pro`, while our implemented baseline system is `impl_sllm,cache_replace`
