@@ -1,0 +1,23 @@
+[submodule "src/kernel/flashinfer"]
+	path = src/kernel/flashinfer
+	url = git@github.com:blitz-serving/flashinfer.git
+	branch = blitz
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "third_party/json"]
+	path = third_party/json
+	url = https://github.com/nlohmann/json.git
+[submodule "third_party/argparse"]
+	path = third_party/argparse
+	url = https://github.com/p-ranav/argparse.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "request-sim"]
+	path = request-sim
+	url = ../request-sim.git
+	branch = develop
+[submodule "third_party/pickle"]
+	path = third_party/pickle
+	url = ../pickle.git
