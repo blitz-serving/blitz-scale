@@ -54,14 +54,14 @@ The whole BlitScale system consists of multiple C++ backend as workers and one R
 To run the 3 components together for various evaluation settings, we develop a batch job runner in `scripts/batch`. The batch runner takes a batch job description toml file named *template*, and instantiates all the toml config file of each run, named *instance*. According each *instance* file, batch runner will recompile the router part according to enabled features, and fill the client with designated trace. The `config` directory still remains some test/evaluation configurations when we develop this project. You need to change the IP where C++ workers listen on, and the NIC name according to your machine.
 
 ## Known issues
-The models are unable to generate correct tokens. This is due to the fast-changing kernels of Flashinfer, a lack of implementing document, and its diminishing support on native C++ APIs. To follow the trend, we do consider engage some python code to keep path with the most powerful LLM kernels.
+The models are unable to generate correct tokens. This is due to the fast-changing kernels of Flashinfer, a lack of implementing document, and its diminishing support on native C++ APIs. To follow the trend, we do consider engage some python code to keep pace with the most powerful LLM kernels.
 
 ## Docs (TBD)
 We will provide docs in a story-telling way, once read, you can understand our full design!
 Docs can be found on `https://blitz-serving.github.io/blitzscale-doc/`, but we are still working on it.
 
 ## Acknowledgements  
-This project leverage awosome kernel libeary **FlashInfer**!
+This project leverage awesome kernel library **FlashInfer**!
 <https://github.com/flashinfer-ai/flashinfer>
 
 This project incorporates code from **Text Generation Inference (TGI)**  
@@ -72,8 +72,8 @@ The full license text of apache-2.0 in TGI is provided in `LICENSES/Apache-2.0.t
 
 The specification of modification to TGI file can be found in `NOTICE` and each source file.
 
-This project is also inpired by **SwiftTransformer**,
+This project is also inspired by **SwiftTransformer**,
 <https://github.com/LLMServe/SwiftTransformer>
-e.g., we learned that cuBLAS uses a columm-major storage format from their code.
+e.g., we learned that cuBLAS uses a column-major storage format from their code.
 
 
