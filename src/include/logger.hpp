@@ -2,6 +2,7 @@
 
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <cstdlib>
 #include <utility>

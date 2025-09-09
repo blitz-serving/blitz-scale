@@ -192,7 +192,7 @@ inline void TcclChainMulticast(
     BZ_DEBUG(
         "Rank<{}> Multicast group: [{}]",
         gWorldRank,
-        fmt::join(ranks_in_chain, ",")
+        ::fmt::join(ranks_in_chain, ",")
     );
     assert(ranks_in_chain.size() >= 2 && chain_index < ranks_in_chain.size());
     if (ranks_in_chain.size() == 2) {
