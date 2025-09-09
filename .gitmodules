@@ -1,6 +1,6 @@
 [submodule "src/kernel/flashinfer"]
 	path = src/kernel/flashinfer
-	url = git@github.com:blitz-serving/flashinfer.git
+	url = https://github.com/blitz-serving/flashinfer.git
 	branch = blitz
 [submodule "third_party/googletest"]
 	path = third_party/googletest
@@ -14,10 +14,10 @@
 [submodule "third_party/fmt"]
 	path = third_party/fmt
 	url = https://github.com/fmtlib/fmt.git
-[submodule "request-sim"]
-	path = request-sim
-	url = ../request-sim.git
-	branch = develop
 [submodule "third_party/pickle"]
 	path = third_party/pickle
-	url = ../pickle.git
+	url = https://github.com/blitz-serving/pickle.git
+	branch = develop
+[submodule "request-sim"]
+	path = request-sim
+	url = https://github.com/blitz-serving/request-sim.git
