@@ -21,3 +21,4 @@
 [submodule "request-sim"]
 	path = request-sim
 	url = https://github.com/blitz-serving/request-sim.git
+	branch =develop
