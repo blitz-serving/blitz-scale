@@ -64,22 +64,11 @@ vergen = { version = "8.2.5", features = ["build", "git", "gitcl"] }
 [features]
 default = ["ngrok", "impl_blitz"]
 ngrok = ["dep:ngrok"]
-statistic = []
-manually_scale = []
+
+# -------- Core Implementations (mutually exclusive) --------
 impl_blitz = ["impl_rdma", "mutate"]
 impl_sllm = []
-
-# feat and dependency
-eval_sllm = ["cache_replace"]
-eval_sllm_pro = ["cache_all_hit", "mutate"]
-eval_net = ["impl_blitz", "unidirect", "impl_nvl"]
-eval_fast = ["impl_blitz", "impl_fast_pro"]
-eval_all = ["impl_blitz", "impl_fast_pro", "impl_live_pro"]
-eval_fast_wo_nvl = ["impl_blitz", "impl_fast"]
-eval_fast_live_wo_nvl = ["impl_blitz", "impl_fast", "impl_live"]
-test_live = ["live"]
-test_nvl = ["impl_nvl"]
-test_tanz = ["impl_blitz", "impl_tanz"]
+manually_scale = []
 
 # -------- Policy --------
 mutate = []
@@ -98,21 +87,20 @@ impl_rdma = []
 impl_fast = ["fast", "impl_rdma"]
 impl_tanz = ["fast", "impl_rdma", "impl_nvl"]
 impl_fast_pro = ["fast", "impl_tanz"]
+# test_live gates specific debug logic in exec_blitz.rs
+test_live = ["live"]
+# buddy_nic gates NIC filtering in exec_blitz.rs
+buddy_nic = []
 
-# ---- Serverless-LLM ----
+# ---- Serverless-LLM (mutually exclusive cache modes) ----
 cache_all_miss = ["impl_sllm"]
 cache_all_hit = ["impl_sllm"]
 cache_replace = ["impl_sllm"]
 
-#------- Motivation ------
-motiv = ["impl_sllm", "mock_transfer"]
-
-# Sleep for a while to simulate params transfering in sched_naive
+# ---- Testing / Simulation ----
 mock_transfer = []
-
-# For serverless llm to scale from prefill ndoe
-optimize_network_interference = []
-# For serverless llm to simulate operator loading. It takes 100 ms
+# optimize_op_loading simulates 100ms operator loading delay
 optimize_op_loading = []
 
+# ---- Runtime optimization flags ----
 decode_load_balance = []

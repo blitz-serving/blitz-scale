@@ -14,9 +14,6 @@
 )))]
 compile_error!("You must define how this system is running!");
 
-#[cfg(feature = "sched_naive")]
-compile_error!("Feature sched_naive out of dated!");
-
 #[cfg(all(feature = "impl_blitz", feature = "mock_transfer"))]
 compile_error!("Feature mock_transfer is not supported with impl_blitz.");
 
