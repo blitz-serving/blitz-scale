@@ -291,33 +291,32 @@ int launch_disagg_servers(int argc, char* argv[]) {
 
     BZ_INFO("Rank<{}> Num total blocks {}", rank, args.get_num_total_blocks())
 
-    // clang-format off
-    auto stub = blitz::Stub<DType, IdType>(
-        !is_inactive,
-        world_size,
-        rank,
-        device,
-        nullptr,  // TODO: ib
-        model_config.num_layers / args.get_pp_degree(),                     // layers
-        model_config.num_q_heads,                                           // qo-head
-        model_config.num_kv_heads ,                                         // kv-head
-        model_config.head_dim,                                              // head-size
-        model_config.hidden_size,                                           // hidden-size
-        model_config.ffn_inter_dim,                                         // inter-size
-        model_config.vocab_size,                                            // vocab
-        1024,                                                               // max-batch-size
-        8192,                                                               // max-batch-tokens
-        64,                                                                 // page-size,
-        args.get_num_total_blocks(),                                        // max-num-page
-        machine_comm,                                                       // mpi machine comm
-        tp_comm,                                                            // mpi tp comm
-        args.get_tp_degree(),                                               // tp size
-        tp_rank,                                                            // tp rank
-        args.get_pp_degree(),                                               // pp size (hasn't supported yet)
-        args.get_model_path(),
-        args.get_model_name()
-    );
-    // clang-format on
+    blitz::StubConfig stub_config {
+        .is_active = !is_inactive,
+        .world_size = world_size,
+        .rank = rank,
+        .device = device,
+        .ib_hca_name = nullptr,  // TODO: ib
+        .num_layers = model_config.num_layers / (uint32_t)args.get_pp_degree(),
+        .num_qo_head = model_config.num_q_heads,
+        .num_kv_head = model_config.num_kv_heads,
+        .head_size = model_config.head_dim,
+        .hidden_size = model_config.hidden_size,
+        .inter_size = model_config.ffn_inter_dim,
+        .vocab_size = model_config.vocab_size,
+        .max_batch_size = 1024,
+        .max_batch_tokens = 8192,
+        .page_size = 64,
+        .max_num_page = args.get_num_total_blocks(),
+        .machine_comm = machine_comm,
+        .tp_comm = tp_comm,
+        .tp_size = args.get_tp_degree(),
+        .tp_rank = tp_rank,
+        .pp_size = args.get_pp_degree(),
+        .model_path = args.get_model_path(),
+        .model_name = args.get_model_name()
+    };
+    auto stub = blitz::Stub<DType, IdType>(stub_config);
 
     /// \note init communicator inside constructor
     // stub.init_communicator();

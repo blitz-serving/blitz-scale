@@ -8,4 +8,10 @@ set_target_properties(blitz_tccl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(blitz_model_loader ./model_loader.cc)
 set_target_properties(blitz_model_loader PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+add_library(blitz_param_transfer ./param_transfer.cc)
+set_target_properties(blitz_param_transfer PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_library(blitz_forward_executor ./forward_executor.cc)
+set_target_properties(blitz_forward_executor PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 # add_subdirectory(tests)
