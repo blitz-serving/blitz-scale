@@ -347,7 +347,12 @@ int launch_disagg_servers(int argc, char* argv[]) {
         ::grpc::InsecureServerCredentials(),
         nullptr
     );
-    builder.RegisterService(&service);
+    builder.RegisterService(
+        static_cast<::generate::v2::EngineService::Service*>(&service));
+    builder.RegisterService(
+        static_cast<::generate::v2::ResourceService::Service*>(&service));
+    builder.RegisterService(
+        static_cast<::generate::v2::AdminService::Service*>(&service));
     server = builder.BuildAndStart();
 
     // code for gracefully shutdown

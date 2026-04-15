@@ -13,7 +13,7 @@
 #include "model/llama.h"
 #include "activation_manager.h"
 #include "batch.h"
-#include "generate.pb.h"
+#include "blitz_proto.h"
 #include "include/atomic_channel.hpp"
 #include "include/logger.hpp"
 #include "include/step_locker.hpp"

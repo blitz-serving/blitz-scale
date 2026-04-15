@@ -1,0 +1,256 @@
+syntax = "proto2";
+
+package generate.v2;
+
+import "common.proto";
+
+// EngineService handles the inference request lifecycle:
+// prefill, decode, batch management, and KV cache migration.
+// These operations are tightly coupled on the request hot path.
+service EngineService {
+    // Model Info
+    rpc Info(InfoRequest) returns (InfoResponse) {}
+    // Warmup the model and compute max cache size
+    rpc Warmup(WarmupRequest) returns (WarmupResponse);
+    // Prefill batch and decode first token
+    rpc Prefill(PrefillRequest) returns (PrefillResponse);
+    // Decode token for a list of prefilled batches
+    rpc Decode(DecodeRequest) returns (DecodeResponse);
+    // Prefill batch with pipeline parallelism support
+    rpc PrefillV2(PrefillV2Request) returns (PrefillV2Response);
+    // Decode with external token injection
+    rpc DecodeV2(DecodeV2Request) returns (DecodeV2Response);
+    // Prefill batch through zigzag scheduler
+    rpc ZagPrefill(ZagPrefillRequest) returns (PrefillV2Response);
+    // Empties batch cache
+    rpc ClearCache(ClearCacheRequest) returns (ClearCacheResponse);
+    // Remove requests from a cached batch
+    rpc FilterBatch(FilterBatchRequest) returns (FilterBatchResponse);
+    // Relay request to another replica
+    rpc Relay(RelayRequest) returns (RelayResponse);
+    // Send KV cache migration (full batch)
+    rpc Migrate(MigrateRequest) returns (MigrateResponse);
+    // Receive KV cache migration (full batch)
+    rpc Immigrate(ImmigrateRequest) returns (ImmigrateResponse);
+    // Send KV cache migration (partial: first/second half layers)
+    rpc MigratePartial(MigratePartialRequest) returns (MigrateResponse);
+    // Receive KV cache migration (partial: first/second half layers)
+    rpc ImmigratePartial(ImmigratePartialRequest) returns (ImmigrateResponse);
+    // Wait for RDMA operations to complete
+    rpc WaitRdmaDone(WaitRdmaDoneRequest) returns (WaitRdmaDoneResponse);
+}
+
+// --- Info & Warmup ---
+
+message InfoRequest {}
+
+message InfoResponse {
+    required bool requires_padding = 1;
+    required string dtype = 2;
+    required string device_type = 3;
+    optional uint32 window_size = 4;
+    required uint32 speculate = 5;
+}
+
+message WarmupRequest {
+    // Batch to warmup on
+    optional Batch batch = 1;
+    optional uint32 max_input_length = 2;
+    optional uint32 max_prefill_tokens = 3;
+    optional uint32 max_total_tokens = 4;
+}
+
+message WarmupResponse {
+    // Maximum number of tokens supported by the model
+    optional uint32 max_supported_total_tokens = 1;
+}
+
+// --- Prefill & Decode (Legacy) ---
+
+message PrefillRequest {
+    // Batch
+    required Batch batch = 1;
+}
+
+message PrefillResponse {
+    // Generation
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Forward elapsed time in nanoseconds
+    required uint64 forward_ns = 3;
+    // Decode elapsed time in nanoseconds
+    required uint64 decode_ns = 4;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 5;
+}
+
+message DecodeRequest {
+    // Cached batches
+    repeated CachedBatch batches = 1;
+}
+
+message DecodeResponse {
+    // Decodes
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Forward elapsed time in nanoseconds
+    required uint64 forward_ns = 3;
+    // Decode elapsed time in nanoseconds
+    required uint64 decode_ns = 4;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 5;
+    // Concatenate elapsed time in nanoseconds
+    optional uint64 concat_ns = 6;
+}
+
+// --- Prefill & Decode V2 (Disaggregated) ---
+
+message PrefillV2Request {
+    // Batch
+    required Batch batch = 1;
+    //
+    required uint32 forward_case = 2;
+    //
+    optional PipeParaInfo pp_info = 3;
+    //
+    repeated int32 pipe_peer = 4;
+}
+
+message PrefillV2Response {
+    // Generation
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Updated PP info
+    optional PipeParaInfo pp_info = 3;
+    // Forward elapsed time in nanoseconds
+    required uint64 forward_ns = 4;
+    // Decode elapsed time in nanoseconds
+    required uint64 decode_ns = 5;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 6;
+}
+
+message ZagPrefillRequest {
+    // Batch
+    required Batch batch = 1;
+    //
+    required uint32 forward_case = 2;
+    //
+    optional PipeParaInfo pp_info = 3;
+    // Total forward layers conducted by scheduler
+    required uint32 zag_layers = 4;
+    // Sequential number
+    required uint32 zag_seq_num = 5;
+}
+
+message DecodeV2Request {
+    // Cached batches
+    repeated CachedBatch batches = 1;
+    // Last iteration output tokens
+    repeated Tokens last_iter_tokens = 2;
+}
+
+message DecodeV2Response {
+    // Decodes
+    repeated Generation generations = 1;
+    // Next batch (cached)
+    optional CachedBatch batch = 2;
+    // Total elapsed time in nanoseconds
+    required uint64 total_ns = 3;
+}
+
+// --- Batch Management ---
+
+message ClearCacheRequest {
+    // Optional batch id
+    optional uint64 id = 1;
+}
+
+message ClearCacheResponse {}
+
+message FilterBatchRequest {
+    // Batch ID
+    required uint64 batch_id = 1;
+    // Requests to keep
+    repeated uint64 request_ids = 2;
+}
+
+message FilterBatchResponse {
+    // Filtered Batch (cached)
+    required CachedBatch batch = 1;
+}
+
+// --- Relay ---
+
+message RelayRequest {
+    required int32 rank = 1;
+    required bool relax_not_head = 2;
+}
+
+message RelayResponse {
+    optional uint64 batch_id = 1;
+    optional uint32 seq_num = 2;
+}
+
+// --- KV Cache Migration ---
+
+message MigrateRequest {
+    // Migrate batch
+    required Batch batch = 1;
+    // Src ranks, probably in TP
+    repeated int32 src = 2;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 3;
+}
+
+message MigratePartialRequest {
+    // Migrate batch
+    required Batch batch = 1;
+    // Partial cases
+    required PartialCase fst_or_snd = 2;
+    // Dividing layer
+    required uint32 num_layer = 3;
+    // Src ranks, probably in TP
+    repeated int32 src = 4;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 5;
+}
+
+message MigrateResponse {
+    // Next batch (cached) at Decode instance
+    required CachedBatch batch = 1;
+}
+
+message ImmigrateRequest {
+    // Immigrate batch
+    required Batch batch = 1;
+    // Src ranks, probably in TP
+    repeated int32 src = 2;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 3;
+}
+
+message ImmigratePartialRequest {
+    // Immigrate batch
+    required Batch batch = 1;
+    // Partial cases
+    required PartialCase fst_or_snd = 2;
+    // Dividing layer
+    required uint32 num_layer = 3;
+    // Src ranks, probably in TP
+    repeated int32 src = 4;
+    // Dst ranks, probably in TP
+    repeated int32 dst = 5;
+}
+
+message ImmigrateResponse {
+    // Next batch (cached) at Decode instance
+    required CachedBatch batch = 1;
+}
+
+message WaitRdmaDoneRequest {}
+
+message WaitRdmaDoneResponse {}

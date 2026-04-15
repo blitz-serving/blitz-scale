@@ -13,7 +13,7 @@
 #include "../include/tokenizer.hpp"
 #include "cache_manager.h"
 #include "fmt/format.h"
-#include "generate.pb.h"
+#include "blitz_proto.h"
 #include "include/logger.hpp"
 #include "kernel/page.h"
 #include "stopping.h"

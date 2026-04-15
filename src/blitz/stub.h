@@ -22,7 +22,7 @@
 #include "activation_manager.h"
 #include "batch.h"
 #include "cache_manager.h"
-#include "generate.pb.h"
+#include "blitz_proto.h"
 #include "include/blitz_tccl.h"
 #include "include/logger.hpp"
 #include "include/step_locker.hpp"

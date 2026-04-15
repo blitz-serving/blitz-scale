@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "generate.pb.h"
+#include "blitz_proto.h"
 #include "include/handle_exception.h"
 #include "model/common_hyper.h"
 

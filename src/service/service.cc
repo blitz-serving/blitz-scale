@@ -23,7 +23,7 @@
 #include "blitz/stub.h"
 #include "fmt/core.h"
 #include "fmt/format.h"
-#include "generate.pb.h"
+#include "blitz_proto.h"
 #include "include/logger.hpp"
 #include "include/types.hpp"
 #include "migration_manager.h"

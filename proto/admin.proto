@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+package generate.v2;
+
+// AdminService handles monitoring and lifecycle management.
+// Always available even when the engine is overloaded.
+service AdminService {
+    // Health check
+    rpc Health(HealthRequest) returns (HealthResponse);
+    // Clear TFM_LAYER_CNT when replica turns into INACTIVE
+    rpc ResetStatus(ResetStatusRequest) returns (ResetStatusResponse);
+    // Set status to READY. Used to mock the status of the model
+    rpc SetStatusReady(SetStatusReadyRequest) returns (SetStatusReadyResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+    required string state = 1;
+}
+
+message ResetStatusRequest {}
+
+message ResetStatusResponse {}
+
+message SetStatusReadyRequest {}
+
+message SetStatusReadyResponse {}

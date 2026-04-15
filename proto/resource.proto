@@ -1,0 +1,73 @@
+syntax = "proto2";
+
+package generate.v2;
+
+// ResourceService handles model weight lifecycle:
+// parameter loading, transfer, and broadcasting.
+// Called during scaling events (add/remove replicas),
+// not during steady-state inference.
+service ResourceService {
+    // Service discovery
+    rpc ServiceDiscovery(ServiceDiscoveryRequest) returns (ServiceDiscoveryResponse) {}
+    // Send parameters to dst rank
+    rpc SendParams(SendParamsRequest) returns (SendParamsResponse);
+    // Receive parameters from src rank
+    rpc RecvParams(RecvParamsRequest) returns (RecvParamsResponse);
+    // Load params from host memory or disk to device memory
+    rpc LoadParams(LoadParamsRequest) returns (LoadParamsResponse);
+    // Broadcast params through NVLink
+    rpc NvlBroadcast(BroadcastRequest) returns (BroadcastResponse);
+    // Broadcast params through RDMA
+    rpc RdmaBroadcast(BroadcastRequest) returns (BroadcastResponse);
+    // Broadcast params in a Waltz Tanz fashion
+    rpc TanzBroadcast(BroadcastRequest) returns (BroadcastResponse);
+}
+
+// --- Service Discovery ---
+
+message ServiceDiscoveryRequest {}
+
+message ServiceDiscoveryResponse {
+    // Other shards urls
+    repeated string urls = 1;
+    // Ranks view
+    required string ranks_view_in_json = 2;
+}
+
+// --- Parameter Transfer ---
+
+message SendParamsRequest {
+    required int32 dst = 1;
+}
+
+message SendParamsResponse {}
+
+message RecvParamsRequest {
+    required int32 src = 1;
+}
+
+message RecvParamsResponse {}
+
+enum LoadParamCase {
+    // from host memory
+    LOAD_FROM_HOST_MEM = 0;
+    // from disk
+    LOAD_FROM_DISK = 1;
+}
+
+message LoadParamsRequest {
+    required LoadParamCase load_case = 1;
+    required string model_name = 2;
+    optional string model_path = 3;
+}
+
+message LoadParamsResponse {}
+
+// --- Broadcasting ---
+
+message BroadcastRequest {
+    repeated int32 src_ranks = 1;
+    repeated int32 dst_ranks = 2;
+}
+
+message BroadcastResponse {}

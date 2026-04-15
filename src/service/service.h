@@ -15,15 +15,20 @@
 #include "blitz/stub.h"
 #include "include/spinlock.hpp"
 #include "include/tokenizer.hpp"
-#include "generate.grpc.pb.h"
-#include "generate.pb.h"
+#include "blitz_proto.h"
+#include "engine.grpc.pb.h"
+#include "resource.grpc.pb.h"
+#include "admin.grpc.pb.h"
 #include "model/hyper.h"
 
 template<typename DType, typename IdType>
 using Batch_t = std::unique_ptr<blitz::Batch<DType, IdType>>;
 
 template<typename DType, typename IdType>
-class TextGenerationServiceImpl final: public ::generate::v2::TextGenerationService::Service {
+class TextGenerationServiceImpl final
+    : public ::generate::v2::EngineService::Service,
+      public ::generate::v2::ResourceService::Service,
+      public ::generate::v2::AdminService::Service {
   private:
     std::unique_ptr<blitz::Stub<DType, IdType>> blitz_stub;
     // serialize concurrent ZagPrefill RPC

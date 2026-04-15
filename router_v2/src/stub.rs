@@ -11,7 +11,9 @@ use std::cmp::min;
 
 use grpc_metadata::InjectTelemetryContext;
 use pb::generate::v2::*;
-use text_generation_service_client::TextGenerationServiceClient;
+use engine_service_client::EngineServiceClient;
+use resource_service_client::ResourceServiceClient;
+use admin_service_client::AdminServiceClient;
 use tonic::transport::{Channel, Uri};
 use tracing::instrument;
 
@@ -29,10 +31,12 @@ pub fn is_case_set(encoding: u32, case: PrefillCase) -> bool {
     encoding & case as u32 != 0
 }
 
-/// Blitz gRPC client
+/// Blitz gRPC client — wraps 3 service clients sharing one channel
 #[derive(Debug, Clone)]
 pub struct Stub {
-    stub: TextGenerationServiceClient<Channel>,
+    engine: EngineServiceClient<Channel>,
+    resource: ResourceServiceClient<Channel>,
+    admin: AdminServiceClient<Channel>,
 }
 
 impl Stub {
@@ -62,14 +66,18 @@ impl Stub {
             })?;
 
         Ok(Self {
-            stub: TextGenerationServiceClient::new(channel),
+            engine: EngineServiceClient::new(channel.clone()),
+            resource: ResourceServiceClient::new(channel.clone()),
+            admin: AdminServiceClient::new(channel),
         })
     }
 
     async fn connect_tcp(addr: String) -> Result<Self> {
         let channel = Channel::from_shared(addr)?.connect().await?;
         Ok(Self {
-            stub: TextGenerationServiceClient::new(channel),
+            engine: EngineServiceClient::new(channel.clone()),
+            resource: ResourceServiceClient::new(channel.clone()),
+            admin: AdminServiceClient::new(channel),
         })
     }
 
@@ -77,7 +85,7 @@ impl Stub {
     #[instrument(skip(self))]
     pub async fn service_discovery(&mut self) -> Result<Vec<String>> {
         let request = tonic::Request::new(ServiceDiscoveryRequest {}).inject_context();
-        let response = self.stub.service_discovery(request).await?;
+        let response = self.resource.service_discovery(request).await?;
         let uris = response.into_inner().urls.into_iter().collect();
         Ok(uris)
     }
@@ -86,7 +94,7 @@ impl Stub {
     #[instrument(skip(self))]
     pub async fn info(&mut self) -> Result<InfoResponse> {
         let request = tonic::Request::new(InfoRequest {}).inject_context();
-        let response = self.stub.info(request).await?.into_inner();
+        let response = self.engine.info(request).await?.into_inner();
         Ok(response)
     }
 
@@ -94,7 +102,7 @@ impl Stub {
     #[instrument(skip(self))]
     pub async fn health(&mut self) -> Result<HealthResponse> {
         let request = tonic::Request::new(HealthRequest {}).inject_context();
-        let response = self.stub.health(request).await?.into_inner();
+        let response = self.admin.health(request).await?.into_inner();
         Ok(response)
     }
 
@@ -102,7 +110,7 @@ impl Stub {
     #[instrument(skip_all)]
     pub async fn clear_cache(&mut self, batch_id: Option<u64>) -> Result<()> {
         let request = tonic::Request::new(ClearCacheRequest { id: batch_id }).inject_context();
-        self.stub.clear_cache(request).await?;
+        self.engine.clear_cache(request).await?;
         Ok(())
     }
 
@@ -118,7 +126,7 @@ impl Stub {
             request_ids,
         })
         .inject_context();
-        let filtered_batch = self.stub.filter_batch(request).await?.into_inner();
+        let filtered_batch = self.engine.filter_batch(request).await?.into_inner();
         Ok(filtered_batch.batch)
     }
 
@@ -179,113 +187,39 @@ impl Stub {
             max_total_tokens: Some(max_total_tokens),
         })
         .inject_context();
-        let response = self.stub.warmup(request).await?.into_inner();
+        let response = self.engine.warmup(request).await?.into_inner();
         Ok(response.max_supported_total_tokens)
     }
 }
 
 impl Stub {
+    // --- EngineService methods ---
+
     #[instrument(skip_all)]
     pub async fn prefill_v2(&mut self, request: PrefillV2Request) -> Result<PrefillV2Response> {
         let request = tonic::Request::new(request).inject_context();
-        let response = self.stub.prefill_v2(request).await?.into_inner();
+        let response = self.engine.prefill_v2(request).await?.into_inner();
         Ok(response)
     }
 
     #[instrument(skip_all)]
     pub async fn zag_prefill(&mut self, request: ZagPrefillRequest) -> Result<PrefillV2Response> {
         let request = tonic::Request::new(request).inject_context();
-        let response = self.stub.zag_prefill(request).await?.into_inner();
+        let response = self.engine.zag_prefill(request).await?.into_inner();
         Ok(response)
     }
 
     #[instrument(skip_all)]
     pub async fn decode_v2(&mut self, request: DecodeV2Request) -> Result<DecodeV2Response> {
         let request = tonic::Request::new(request).inject_context();
-        let response = self.stub.decode_v2(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn send_params(&mut self, dst: i32) -> Result<SendParamsResponse> {
-        let request = tonic::Request::new(SendParamsRequest { dst }).inject_context();
-        let response = self.stub.send_params(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn recv_params(&mut self, src: i32) -> Result<RecvParamsResponse> {
-        let request = tonic::Request::new(RecvParamsRequest { src }).inject_context();
-        let response = self.stub.recv_params(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn reset_status(&mut self) -> Result<ResetStatusResponse> {
-        let request = tonic::Request::new(ResetStatusRequest {}).inject_context();
-        let response = self.stub.reset_status(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn set_status_ready(&mut self) -> Result<SetStatusReadyResponse> {
-        let request = tonic::Request::new(SetStatusReadyRequest {}).inject_context();
-        let response = self.stub.set_status_ready(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn load_params_from_host_memory(
-        &mut self,
-        model_name: String,
-    ) -> Result<LoadParamsResponse> {
-        let request = tonic::Request::new(LoadParamsRequest {
-            load_case: LoadParamCase::LoadFromHostMem as i32,
-            model_name,
-            model_path: None,
-        })
-        .inject_context();
-        let response = self.stub.load_params(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn load_param_from_disk(
-        &mut self,
-        model_name: String,
-        model_path: String,
-    ) -> Result<LoadParamsResponse> {
-        let request = tonic::Request::new(LoadParamsRequest {
-            load_case: LoadParamCase::LoadFromDisk as i32,
-            model_name,
-            model_path: Some(model_path),
-        })
-        .inject_context();
-        let response = self.stub.load_params(request).await?.into_inner();
-        Ok(response)
-    }
-
-    #[instrument(skip_all)]
-    pub async fn load_params(
-        &mut self,
-        case: LoadParamCase,
-        model_name: String,
-        model_path: Option<String>,
-    ) -> Result<LoadParamsResponse> {
-        let request = tonic::Request::new(LoadParamsRequest {
-            load_case: case as i32,
-            model_name,
-            model_path,
-        })
-        .inject_context();
-        let response = self.stub.load_params(request).await?.into_inner();
+        let response = self.engine.decode_v2(request).await?.into_inner();
         Ok(response)
     }
 
     #[instrument(skip_all)]
     pub async fn wait_rdma_done(&mut self) -> Result<WaitRdmaDoneResponse> {
         let request = tonic::Request::new(WaitRdmaDoneRequest {}).inject_context();
-        let response = self.stub.wait_rdma_done(request).await?.into_inner();
+        let response = self.engine.wait_rdma_done(request).await?.into_inner();
         Ok(response)
     }
 
@@ -297,7 +231,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<MigrateResponse> {
         Ok(self
-            .stub
+            .engine
             .migrate(
                 tonic::Request::new(MigrateRequest {
                     batch,
@@ -318,7 +252,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<ImmigrateResponse> {
         Ok(self
-            .stub
+            .engine
             .immigrate(
                 tonic::Request::new(ImmigrateRequest {
                     batch,
@@ -342,7 +276,7 @@ impl Stub {
             relax_not_head,
         })
         .inject_context();
-        let response = self.stub.relay(request).await?.into_inner();
+        let response = self.engine.relay(request).await?.into_inner();
         Ok((response.batch_id, response.seq_num))
     }
 
@@ -355,7 +289,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<MigrateResponse> {
         Ok(self
-            .stub
+            .engine
             .migrate_partial(
                 tonic::Request::new(MigratePartialRequest {
                     batch,
@@ -379,7 +313,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<ImmigrateResponse> {
         Ok(self
-            .stub
+            .engine
             .immigrate_partial(
                 tonic::Request::new(ImmigratePartialRequest {
                     batch,
@@ -403,7 +337,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<MigrateResponse> {
         Ok({
-            self.stub
+            self.engine
                 .migrate_partial(
                     tonic::Request::new(MigratePartialRequest {
                         batch,
@@ -428,7 +362,7 @@ impl Stub {
         dst_ranks: Vec<i32>,
     ) -> Result<ImmigrateResponse> {
         Ok(self
-            .stub
+            .engine
             .immigrate_partial(
                 tonic::Request::new(ImmigratePartialRequest {
                     batch,
@@ -443,6 +377,70 @@ impl Stub {
             .into_inner())
     }
 
+    // --- ResourceService methods ---
+
+    #[instrument(skip_all)]
+    pub async fn send_params(&mut self, dst: i32) -> Result<SendParamsResponse> {
+        let request = tonic::Request::new(SendParamsRequest { dst }).inject_context();
+        let response = self.resource.send_params(request).await?.into_inner();
+        Ok(response)
+    }
+
+    #[instrument(skip_all)]
+    pub async fn recv_params(&mut self, src: i32) -> Result<RecvParamsResponse> {
+        let request = tonic::Request::new(RecvParamsRequest { src }).inject_context();
+        let response = self.resource.recv_params(request).await?.into_inner();
+        Ok(response)
+    }
+
+    #[instrument(skip_all)]
+    pub async fn load_params_from_host_memory(
+        &mut self,
+        model_name: String,
+    ) -> Result<LoadParamsResponse> {
+        let request = tonic::Request::new(LoadParamsRequest {
+            load_case: LoadParamCase::LoadFromHostMem as i32,
+            model_name,
+            model_path: None,
+        })
+        .inject_context();
+        let response = self.resource.load_params(request).await?.into_inner();
+        Ok(response)
+    }
+
+    #[instrument(skip_all)]
+    pub async fn load_param_from_disk(
+        &mut self,
+        model_name: String,
+        model_path: String,
+    ) -> Result<LoadParamsResponse> {
+        let request = tonic::Request::new(LoadParamsRequest {
+            load_case: LoadParamCase::LoadFromDisk as i32,
+            model_name,
+            model_path: Some(model_path),
+        })
+        .inject_context();
+        let response = self.resource.load_params(request).await?.into_inner();
+        Ok(response)
+    }
+
+    #[instrument(skip_all)]
+    pub async fn load_params(
+        &mut self,
+        case: LoadParamCase,
+        model_name: String,
+        model_path: Option<String>,
+    ) -> Result<LoadParamsResponse> {
+        let request = tonic::Request::new(LoadParamsRequest {
+            load_case: case as i32,
+            model_name,
+            model_path,
+        })
+        .inject_context();
+        let response = self.resource.load_params(request).await?.into_inner();
+        Ok(response)
+    }
+
     #[instrument(skip_all)]
     pub async fn nvl_broadcast(
         &mut self,
@@ -454,7 +452,7 @@ impl Stub {
             dst_ranks: dst_ranks.clone(),
         })
         .inject_context();
-        Ok(self.stub.nvl_broadcast(request).await?.into_inner())
+        Ok(self.resource.nvl_broadcast(request).await?.into_inner())
     }
 
     #[instrument(skip_all)]
@@ -468,7 +466,7 @@ impl Stub {
             dst_ranks: dst_ranks.clone(),
         })
         .inject_context();
-        Ok(self.stub.rdma_broadcast(request).await?.into_inner())
+        Ok(self.resource.rdma_broadcast(request).await?.into_inner())
     }
 
     #[instrument(skip_all)]
@@ -482,6 +480,22 @@ impl Stub {
             dst_ranks: dst_ranks.clone(),
         })
         .inject_context();
-        Ok(self.stub.tanz_broadcast(request).await?.into_inner())
+        Ok(self.resource.tanz_broadcast(request).await?.into_inner())
+    }
+
+    // --- AdminService methods ---
+
+    #[instrument(skip_all)]
+    pub async fn reset_status(&mut self) -> Result<ResetStatusResponse> {
+        let request = tonic::Request::new(ResetStatusRequest {}).inject_context();
+        let response = self.admin.reset_status(request).await?.into_inner();
+        Ok(response)
+    }
+
+    #[instrument(skip_all)]
+    pub async fn set_status_ready(&mut self) -> Result<SetStatusReadyResponse> {
+        let request = tonic::Request::new(SetStatusReadyRequest {}).inject_context();
+        let response = self.admin.set_status_ready(request).await?.into_inner();
+        Ok(response)
     }
 }

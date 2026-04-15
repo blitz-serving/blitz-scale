@@ -1,7 +1,12 @@
 #
 # Protobuf/Grpc source files
 #
-set(PROTO_FILES generate.proto)
+set(PROTO_FILES
+    common.proto
+    engine.proto
+    resource.proto
+    admin.proto
+)
 
 #
 # Add Library target with protobuf sources
