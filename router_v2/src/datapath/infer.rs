@@ -11,8 +11,8 @@
 #![allow(unused)]
 
 use crate::error::ClientError;
-use crate::replica::config::DisaggregationConfig;
-use crate::validation::{Validation, ValidationError};
+use crate::control::replica::config::DisaggregationConfig;
+use crate::datapath::validation::{Validation, ValidationError};
 use crate::{
     increase_prefill_tokens, start_disaggregation_event_loop, ControllerArgs,
     DisaggregationController, Entry, Model, Queue, Stub, Token, KV_BLOCK_SIZE,

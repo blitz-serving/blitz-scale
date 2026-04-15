@@ -1,6 +1,6 @@
-use crate::infer::InferError;
-use crate::infer::InferStreamResponse;
-use crate::validation::ValidGenerateRequest;
+use crate::datapath::infer::InferError;
+use crate::datapath::infer::InferStreamResponse;
+use crate::datapath::validation::ValidGenerateRequest;
 
 use std::cmp::min;
 use std::collections::VecDeque;

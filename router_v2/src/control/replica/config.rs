@@ -3,7 +3,7 @@ use nohash_hasher::IntMap;
 use pb::generate::v2::*;
 use serde::{Deserialize, Serialize};
 
-use crate::queue::Entry;
+use crate::datapath::queue::Entry;
 
 /// Partial layer prefill batch
 #[derive(Debug)]

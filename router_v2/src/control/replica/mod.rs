@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use crate::{error::Result, queue::Entry, Stub};
+use crate::{error::Result, datapath::queue::Entry, Stub};
 
 use futures::{future::join_all, join};
 use nohash_hasher::IntMap;
@@ -16,12 +16,19 @@ use tokio::{spawn, task::JoinHandle};
 
 pub(crate) mod config;
 mod cybernetics;
-mod disaggregation;
+mod controller;
+mod globals;
+mod helpers;
+mod migration;
 mod metrics;
 mod relay_queue;
+mod state_machine;
 mod steersman;
+pub mod transitions;
 
-pub use disaggregation::*;
+pub use controller::*;
+pub use globals::*;
+pub use helpers::*;
 pub use metrics::*;
 pub use steersman::*;
 
@@ -190,7 +197,7 @@ async fn stubs_filter_batch(
     }
 }
 
-async fn stubs_filter_batch_with_metric(
+pub(crate) async fn stubs_filter_batch_with_metric(
     stubs: &mut Vec<Stub>,
     replica_metric: Arc<ReplicaMetric>,
     next_batch: Option<CachedBatch>,

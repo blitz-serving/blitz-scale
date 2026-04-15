@@ -13,8 +13,8 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::health::Health;
-use crate::infer::{InferError, InferResponse, InferStreamResponse};
-use crate::validation::ValidationError;
+use crate::datapath::infer::{InferError, InferResponse, InferStreamResponse};
+use crate::datapath::validation::ValidationError;
 use crate::{
     BestOfSequence, CompatGenerateRequest, ControllerArgs, Deployment, Details, ErrorResponse,
     FinishReason, GenerateParameters, GenerateRequest, GenerateResponse, HubModelInfo, Infer, Info,

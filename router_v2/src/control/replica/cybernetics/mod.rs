@@ -1,6 +1,7 @@
 mod exec_blitz;
 mod exec_serverless;
 mod planner;
+pub mod types;
 
 use std::{
     collections::{HashMap, VecDeque},

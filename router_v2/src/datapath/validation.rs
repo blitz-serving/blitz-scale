@@ -1,5 +1,5 @@
 /// Payload validation logic
-use crate::validation::ValidationError::{BestOfSampling, BestOfSeed, EmptyInput};
+use crate::datapath::validation::ValidationError::{BestOfSampling, BestOfSeed, EmptyInput};
 use crate::{GenerateParameters, GenerateRequest};
 
 use pb::generate::v2::{NextTokenChooserParameters, StoppingCriteriaParameters};

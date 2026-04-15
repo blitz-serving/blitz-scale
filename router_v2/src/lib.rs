@@ -63,28 +63,26 @@ const fn feat_sat_checker() {
 #[allow(dead_code)]
 const VALID_FEATURE: () = feat_sat_checker();
 
-mod replica;
-mod statistic;
+mod control;
+mod datapath;
 mod stub;
+mod statistic;
 
-pub use replica::*;
-pub use statistic::*;
+pub use control::*;
 pub use stub::*;
+pub use statistic::*;
 
-pub use infer::{parse_deployment, Deployment};
+pub use datapath::infer::{parse_deployment, Deployment};
 
 pub mod error;
 mod health;
-pub(crate) mod infer;
-mod queue;
 pub mod server;
-mod validation;
 
-use infer::Infer;
-use queue::{Entry, Queue};
+use datapath::infer::Infer;
+use datapath::queue::{Entry, Queue};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use validation::Validation;
+use datapath::validation::Validation;
 
 /// Hub type
 #[derive(Clone, Debug, Deserialize)]
