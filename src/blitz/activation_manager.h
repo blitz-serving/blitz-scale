@@ -18,6 +18,9 @@ namespace blitz {
 template<typename DType, typename IdType>
 class Stub;
 
+template<typename DType, typename IdType>
+class CommBootstrap;
+
 template<typename DType>
 struct SendItem {
     DType* buffer;
@@ -29,6 +32,7 @@ struct SendItem {
 template<typename DType, typename IdType>
 class ActivationManager {
     friend class Stub<DType, IdType>;
+    friend class CommBootstrap<DType, IdType>;
   public:
     ActivationManager(
         const rank_t& rank,

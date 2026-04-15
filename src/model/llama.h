@@ -31,6 +31,15 @@ class Stub;
 
 template<typename DType, typename IdType>
 class ZigzagManager;
+
+template<typename DType, typename IdType>
+class ForwardExecutor;
+
+template<typename DType, typename IdType>
+class ParamTransfer;
+
+template<typename DType, typename IdType>
+class CommBootstrap;
 }  // namespace blitz
 
 namespace blitz::model {
@@ -39,6 +48,9 @@ template<typename DType, typename IdType>
 class Llama: public Model<DType, IdType> {
     friend class Stub<DType, IdType>;
     friend class ZigzagManager<DType, IdType>;
+    friend class ForwardExecutor<DType, IdType>;
+    friend class ParamTransfer<DType, IdType>;
+    friend class CommBootstrap<DType, IdType>;
   private:
     // sublayers
     // use unique_ptr to bypass constructors

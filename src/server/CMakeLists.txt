@@ -21,5 +21,9 @@ target_link_libraries(run_server_disaggregative
     ${MPI_LIBRARIES}
     nccl_utils
     blitz_tccl
-    CUDA::cublas)
+    blitz_param_transfer
+    blitz_forward_executor
+    CUDA::cublas
+    ssl
+    crypto)
 target_include_directories(run_server_disaggregative PUBLIC ${INCLUDES})
